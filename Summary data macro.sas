@@ -6,7 +6,7 @@
 
 
 %macro sum_table(datain=,dataout=,classvar=,vars=,all=no);
-%local datain vars classvar numlevels varnames fmtnames varn space varname varf all keepvals;
+%local datain vars classvar numlevels varnames fmtnames varn space varname varf all keepvals;;
 
 ods output CrossTabFreqs=work.ct;
 proc freq data=&datain;
@@ -96,7 +96,7 @@ run;
 
 %if (&all=yes) %then %do;
 	ods output OneWayFreqs=work.ow;
-	proc freq data=_45upsummary;
+	proc freq data=&datain;
 		table (&vars)  /nocum;
 	run;
 
