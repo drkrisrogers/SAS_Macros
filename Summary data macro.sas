@@ -1,6 +1,7 @@
 * Created by Kris Rogers;
 * This macro will create a table in (as a SAS data table) which contains summary data of categorical variables
   according to a classicication variable (ie. a binary/categorical exposure variable,);
+* This could easily be called 'Table 1' as it produces the standard epi paper table 1;
   
 *Dependencies: you need to run batch label variables from lists.sas This should be in the SAS_Macros repository;
 
