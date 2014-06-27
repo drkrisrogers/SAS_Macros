@@ -33,7 +33,7 @@ quit;
  
  data work.ct (keep= value  Variable frequency &classvar level ColPercent Label where=(level is not missing and missing(&classvar) ne 1));
 	set work.ct end=last;
-	attrib   level length=$30   value length=$20;
+	attrib   level length=$40   value length=$20;
 	array levels{*} &varnames;
 	array varnames{%sysfunc(countw(&varn))} $20 _temporary_ (&varn);
 	array varlabel{%sysfunc(countw(&varn))} $40 _temporary_ (&varl);
@@ -41,13 +41,13 @@ quit;
  	do i=1 to dim(levels);
  
  		if missing(levels{i}) ne 1 then do;
-			level=vvalue(levels{i});
+			level=trim(left(vvalue(levels{i})));
 			Variable=varnames{i};
 			Label=varlabel{i};
 		end;
 	end;
 	format colpercent 4.1;
-	value=trim(left(cat(put(frequency,comma7.),' (',put(colpercent,4.1),'%)')));
+	value=trim(left(cat(put(frequency,comma7.),' (',trim(left(put(colpercent,4.1))),'%)')));
 
 run;
 
