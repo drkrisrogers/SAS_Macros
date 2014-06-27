@@ -14,7 +14,7 @@ Updates:
 
 
 %macro char_to_num(dsin=,dsout=,varc=,varn=,varcf=,varcn=);
-%local dsin dsout varc varn varcf varcn;
+%local dsin dsout varc varn varcf varcn dsid vid vlab;
 
 data work.infvals;
 	set &dsin (keep=&varc);
@@ -26,6 +26,11 @@ run;
 proc sort data=work.infvals nodupkey;
 	by fval;
 run;
+
+%let dsid=%sysfunc(open(&dsin));
+%let vid=%sysfunc(&dsid,&varc);
+%let vlab=%sysfunc(&dsid,&vid);
+%let rc=%sysfunc(close(&dsid);
 
 *Create the informat in a datastep, then read it with proc format;
 data work.informat (keep=fmtname type start end label );
@@ -57,6 +62,7 @@ data &dsout;
 	set &dsin;
 	&varn=input(trim(left(put(&varc,&varcf))),Convifmt.);
 	format &varn &varcn;
+	label &varn="%sysfunc(trim(%sysfunc(left(&vlab))))";
 run;
 
  proc catalog catalog=work.formats;
