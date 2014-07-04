@@ -6,7 +6,7 @@
 		
 			l95=exp(LowerWaldCL);
 			u95=exp(UpperWaldCL);
-			ci=cat(round(exp(estimate),.01),' (',round(l95,0.01),' - ',round(u95,0.01),')');
+			ci=cat(strip(put(round(exp(estimate),.01),6.2)),' (',strip(put(round(l95,0.01),6.2)),' - ',strip(put(round(u95,0.01),6.2)),')');
 		
 		format u95 4.2 l95 4.2;
 	run;
@@ -67,6 +67,7 @@
 
 	proc sort data=work.estimates out=work.estimates (keep=parameter level1 ci);
 		by ccount lcount;
+		where parameter ne 'Intercept';
 	run;
 	proc sql noprint;
 		drop table work.class;
