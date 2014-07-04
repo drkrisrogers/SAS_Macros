@@ -28,9 +28,9 @@ proc sort data=work.infvals nodupkey;
 run;
 
 %let dsid=%sysfunc(open(&dsin));
-%let vid=%sysfunc(&dsid,&varc);
-%let vlab=%sysfunc(&dsid,&vid);
-%let rc=%sysfunc(close(&dsid);
+%let vid=%sysfunc(varnum(&dsid,&varc));
+%let vlab=%sysfunc(varlabel(&dsid,&vid));
+%let rc=%sysfunc(close(&dsid));
 
 *Create the informat in a datastep, then read it with proc format;
 data work.informat (keep=fmtname type start end label );
