@@ -1,12 +1,29 @@
-%macro est(table=work.estimates,output=genmod,outdata=);
-%local levels;
+**********
+Author: Kris Rogers 
+Title: Create table of transformed parameter estimates from proc genmod, tobit, and phreg
+Date: One form or another of the macro has been kicking around for years
+Purpose: Output from the above mentioned procedures is a bit rough. It is untransformed and needs work to 
+  		 put it into a form that would be suitable for publication (e.g. reference levels). Run this macro
+		after creating appropriate ods datasts and it will do it for you
+Dependecies: No other macros, but you need these lines to work:
+				proc genmod - "ods output ClassLevels=work.class ParameterEstimates=work.estimates"
+				proc qlim - variables must be renamed with numeric order, because it is a crappy outdated procedure
+Updates: 9/7/2014 KR - update to allow control over the number of decimal places (e.g. 1 for 0.1, 2 for 0.01) 
+		 in the resulting dataset;
+*************;
+ 
+
+%macro est(table=work.estimates,output=genmod,outdata=,byvar=,estplaces=1,ciplaces=2);
+%local levels estplaces ciplaces;
+
+ 
 %if (&output=genmod) %then %do;
-	data work.estimates (drop=estimate df StdErr LowerWaldCL UpperWaldCL ChiSq ProbChiSq or l95 u95 where=(parameter ne 'Scale'));
+	data work.estimates (drop=estimate df StdErr LowerWaldCL UpperWaldCL ChiSq ProbChiSq l95 u95 where=(parameter ne 'Scale'));
 		set work.estimates;
 		
 			l95=exp(LowerWaldCL);
 			u95=exp(UpperWaldCL);
-			ci=cat(strip(put(round(exp(estimate),.01),6.2)),' (',strip(put(round(l95,0.01),6.2)),' - ',strip(put(round(u95,0.01),6.2)),')');
+			ci=cat(strip(put(round(exp(estimate),%sysevalf(10**(-1*&estplaces))),6.&estplaces)),' (',strip(put(round(l95,%sysevalf(10**(-1*&ciplaces))),6.&ciplaces)),' - ',strip(put(round(u95,%sysevalf(10**(-1*&ciplaces))),6.&ciplaces)),')');
 		
 		format u95 4.2 l95 4.2;
 	run;
