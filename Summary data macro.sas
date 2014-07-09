@@ -1,37 +1,58 @@
-* Created by Kris Rogers;
-* This macro will create a table in (as a SAS data table) which contains summary data of categorical variables
-  according to a classicication variable (ie. a binary/categorical exposure variable,);
-* This could easily be called 'Table 1' as it produces the standard epi paper table 1;
-  
-*Dependencies: you need to run batch label variables from lists.sas This should be in the SAS_Macros repository;
+* Author: Kris Rogers;
+* Date: Unsure
+* Purpose: 
+		This macro will create a table in (as a SAS data table) which contains summary data of categorical variables
+  		according to a classicication variable (ie. a binary/categorical exposure variable,);
+* 		This could easily be called 'Table 1' as it produces the standard epi paper table 1;
+* Dependencies: you need to run batch label variables from lists.sas This should be in the SAS_Macros repository;
+* Options: 
+		Add an extra column of the total (and column percent as appropriate) across exposure variables with 
+		the option 'all=yes'. By Default this is turned off;
+*		Produce column or row percentages with the 'percent=' option. For the distrubtion of the variable
+		within exposure category, use column. To look at the distribtion of the exposure category across 
+		variables, use row;
+*Updates: 7/9/2014. KR.  Added the option for column or row percentages. For clarity got rid of all the trim(left());
 
+%macro sum_table(datain=,dataout=,classvar=,vars=,all=no,percent=column);
+%local datain vars classvar numlevels varnames fmtnames varn space varname 
+		varf all keepvals percent exclude pct;
 
-%macro sum_table(datain=,dataout=,classvar=,vars=,all=no);
-%local datain vars classvar numlevels varnames fmtnames varn space varname varf all keepvals;;
+%if (&percent=row) %then %do;
+	%let exclude=nocol;
+	%let pct=RowPercent;
+%end;
+%else %if (&percent=column) %then %do;
+	%let exclude=norow;
+	%let pct=ColPercent;
+%end;
+%else %do; 
+	%put ERROR: Input percent must be column or row; 
+	%goto exit; 
+%end;
 
 ods output CrossTabFreqs=work.ct;
 proc freq data=&datain;
-	table (&vars)*&classvar /norow nopercent;
+	table (&vars)*&classvar /&exclude nopercent;
 run;
 
 proc sql noprint;
 	select name into :varnames separated by ' '
 	from dictionary.columns
 	where libname="WORK" and memname="CT" 
-	and name not in('Table' "&classvar" '_TYPE_' '_TABLE_' 'Frequency' 'ColPercent' 'Missing');
-	select quote(trim(left(name))) into :varn separated by " "
+	and name not in('Table' "&classvar" '_TYPE_' '_TABLE_' 'Frequency' "&pct" 'Missing');
+	select quote(strip(name)) into :varn separated by " "
 	from dictionary.columns
 	where libname="WORK" and memname="CT" 
-	and name not in('Table' "&classvar" '_TYPE_' '_TABLE_' 'Frequency' 'ColPercent' 'Missing');
-	select quote(trim(left(label))) into :varl separated by " "
+	and name not in('Table' "&classvar" '_TYPE_' '_TABLE_' 'Frequency' "&pct" 'Missing');
+	select quote(strip(label)) into :varl separated by " "
 	from dictionary.columns
 	where libname="WORK" and memname="CT" 
-	and name not in('Table' "&classvar" '_TYPE_' '_TABLE_' 'Frequency' 'ColPercent' 'Missing');
+	and name not in('Table' "&classvar" '_TYPE_' '_TABLE_' 'Frequency' "&pct" 'Missing');
  	select format into :varf from dictionary.columns where libname="WORK" and memname="CT" and name="&classvar";
 
 quit;
  
- data work.ct (keep= value  Variable frequency &classvar level ColPercent Label where=(level is not missing and missing(&classvar) ne 1));
+ data work.ct (keep= value  Variable frequency &classvar level &pct Label where=(level is not missing and missing(&classvar) ne 1));
 	set work.ct end=last;
 	attrib   level length=$40   value length=$20;
 	array levels{*} &varnames;
@@ -41,13 +62,13 @@ quit;
  	do i=1 to dim(levels);
  
  		if missing(levels{i}) ne 1 then do;
-			level=trim(left(vvalue(levels{i})));
+			level=strip(vvalue(levels{i}));
 			Variable=varnames{i};
 			Label=varlabel{i};
 		end;
 	end;
-	format colpercent 4.1;
-	value=trim(left(cat(put(frequency,comma7.),' (',trim(left(put(colpercent,4.1))),'%)')));
+	format &pct 4.1;
+	value=strip(cat(put(frequency,comma7.),' (',strip(put(&pct,4.1)),'%)'));
 
 run;
 
@@ -107,11 +128,11 @@ run;
 		from dictionary.columns
 		where libname="WORK" and memname="OW" 
 		and name not in('Table' 'Frequency' 'Percent') and name not contains "F_";
-		select quote(trim(left(name))) into :varn separated by " "
+		select quote(strip(name)) into :varn separated by " "
 		from dictionary.columns
 		where libname="WORK" and memname="OW" 
 		and name not in('Table' 'Frequency' 'Percent') and name not contains "F_";
-		select quote(trim(left(label))) into :varl separated by " "
+		select quote(strip(label)) into :varl separated by " "
 		from dictionary.columns
 		where libname="WORK" and memname="OW" 
 		and name not in('Table' 'Frequency' 'Percent') and name not contains "F_";
@@ -134,7 +155,12 @@ run;
 			end;
 		end;
 		format percent 4.1;
-		val_99=trim(left(cat(put(frequency,comma7.),' (',put(percent,4.1),'%)')));
+		%if (&percent=row) %then %do;
+			val_99=strip(cat(put(frequency,comma7.)));
+		%end;
+		%else %if (&percent=column) %then %do;
+			val_99=strip(cat(put(frequency,comma7.),' (',put(percent,4.1),'%)'));
+		%end;
 		label val_99='All';
 	run;
 
@@ -151,7 +177,7 @@ proc sort data=work.ct;
 	by label order;
 run;
 
-%let maxcount=count%sysfunc(trim(%sysfunc(left(&numlevels))));
+%let maxcount=count%sysfunc(strip(&numlevels));
  
 data work.ct (keep=  &keepvals order label level );
 	set work.ct end=last;
@@ -186,14 +212,14 @@ data work.ct (keep=  &keepvals order label level );
 		order=%eval(1+&obs);
 		Label='Total';
 		do i=1 to dim(count);
-			vals{i}=trim(left(count{i}));
+			vals{i}=strip(count{i});
 		end;
 		%if (&all=yes) %then %do;
 			count_99=0;
 			do i=1 to dim(vals); 
 				count_99=count_99+input(vals{i},8.);
 			end;
-			val_99=trim(left(put(count_99,8.)));
+			val_99=strip(put(count_99,8.));
  		%end;
 		output;
 	end;
@@ -209,12 +235,5 @@ proc sql noprint;
 	%if (&all=yes) %then %do; drop table work.ow; %end;
 quit;
 
-
+%exit: 
 %mend sum_table;
-
-
-
- 
-
-
- 
