@@ -8,15 +8,26 @@ Purpose: Output from the above mentioned procedures is a bit rough. It is untran
 Dependecies: No other macros, but you need these lines to work:
 				proc genmod - "ods output ClassLevels=work.class ParameterEstimates=work.estimates"
 				proc qlim - variables must be renamed with numeric order, because it is a crappy outdated procedure
-Updates: 9/7/2014 KR - update to allow control over the number of decimal places (e.g. 1 for 0.1, 2 for 0.01) 
-		 in the resulting dataset;
+Updates: 09/07/2014 KR - update to allow control over the number of decimal places (e.g. 1 for 0.1, 2 for 0.01) 
+		 in the resulting dataset
+		 15/07/2015 KR  - update to check for existence of the two essential datasets. I feel so grownup.
 *************;
  
 
 %macro est(table=work.estimates,output=genmod,outdata=,byvar=,estplaces=1,ciplaces=2);
 %local levels estplaces ciplaces;
 
- 
+%if (&output=genmod or &output=ph) and (%sysfunc(exist(&table)) ne 1) %then %do;
+	%put ERROR: THE TABLE OF ESTIMATES (%upcase(&table)) DOES NOT EXIST. MACRO WILL END.;
+	%put YOUR CODE IS BAD AND YOU SHOULD FEEL BAD.;
+	%goto exit;
+%end;
+%else %if (&output=genmod or &output=ph) and (%sysfunc(exist(work.class)) ne 1) %then %do;
+	%put ERROR: THE TABLE OF VARIABLE LEVELS (WORK.CLASS) DOES NOT EXIST. MACRO WILL END.;
+	%put YOUR CODE IS BAD AND YOU SHOULD FEEL BAD.;
+	%goto exit;
+%end;
+
 %if (&output=genmod) %then %do;
 	data work.estimates (drop=estimate df StdErr LowerWaldCL UpperWaldCL ChiSq ProbChiSq l95 u95 where=(parameter ne 'Scale'));
 		set work.estimates;
@@ -99,7 +110,7 @@ data work.estimates (keep=parameter level1 ci pcount lcount where=(parameter ne 
 	if estimate ne 0 and stderr ne . then do;
 		l95=estimate-(1.96*stderr);
 		u95=estimate+(1.96*stderr);	
-		ci=cat(round(estimate,.1),' (',round(l95,0.1),' - ',round(u95,0.1),')');
+		ci=cat(strip(put(round(exp(estimate),%sysevalf(10**(-1*&estplaces))),6.&estplaces)),' (',strip(put(round(l95,%sysevalf(10**(-1*&ciplaces))),6.&ciplaces)),' - ',strip(put(round(u95,%sysevalf(10**(-1*&ciplaces))),6.&ciplaces)),')');
 
 	end;
 	*Set CI column to value reference for reference levels;
@@ -162,7 +173,7 @@ run;
 		
 			l95=exp(Estimate-(1.96*StdErr));
 			u95=exp(Estimate+(1.96*StdErr));
-			ci=cat(round(exp(estimate),.01),' (',round(l95,0.01),' - ',round(u95,0.01),')');
+		ci=cat(strip(put(round(exp(estimate),%sysevalf(10**(-1*&estplaces))),6.&estplaces)),' (',strip(put(round(l95,%sysevalf(10**(-1*&ciplaces))),6.&ciplaces)),' - ',strip(put(round(u95,%sysevalf(10**(-1*&ciplaces))),6.&ciplaces)),')');
 		
  	run;
 	
@@ -235,4 +246,5 @@ run;
 		drop table work.estimates;
 	quit;
 
+%exit: ;
 %mend est;
