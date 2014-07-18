@@ -63,8 +63,6 @@ proc sql noprint;
 	from work.obs;
 quit;
 
-%put &ch &dh &uspairs &totobs; 
-
 data &outds; 
 	ch=input("&ch",12.0); 
 	dh=input("&dh",12.0); 
