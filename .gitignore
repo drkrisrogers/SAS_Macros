@@ -179,6 +179,9 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
+# Blindwrite file
+.b00
+
 # Mac crap
 .DS_Store
 
@@ -213,3 +216,5 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+
