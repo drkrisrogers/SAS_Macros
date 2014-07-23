@@ -95,7 +95,7 @@ Updates: 09/07/2014 KR - update to allow control over the number of decimal plac
 
 	proc sort data=work.estimates out=work.estimates (keep=parameter level1 ci);
 		by ccount lcount;
-		where parameter ne 'Intercept';
+		where parameter ne 'Intercept' and level1 ne 'Missing' ;
 	run;
 	proc sql noprint;
 		drop table work.class;
@@ -229,6 +229,7 @@ run;
 		else if ccount=. then ccount=ccount_1;
 		ccount_1=ccount;
 		if level1='.' then level1='Missing';
+		if level1='Missing' then delete;
 	run;
 
 	proc sort data=work.estimates out=work.estimates (keep=parameter level1 ci);
