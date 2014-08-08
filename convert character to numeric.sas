@@ -15,7 +15,13 @@ Updates: 18/07/2014 KR - Changed the way this deals with missing values: no long
 
 						Added some quick checks to see if the input table exists, and all the keywords
 						have been specified. Later should check if the formats exists and columns exist
-						in the input dataset.;
+						in the input dataset.
+		 8/8/2014 KR - The resulting format for the converted variable depends on the contents of the 
+						dataset on which you run this. This is fine as long as you aren't running the 
+			            macro on two seperate datsets with a different distribution of values and specify
+						that you want the same output format name.
+					   There are several approaches to this: for now I think displaying a warning message if 
+					   this occurs is probably adequate for now;
  
 %macro char_to_num(dsin=,dsout=,varc=,varn=,varcf=,varcn=,missing=no);
 %local dsin dsout varc varn varcf varcn dsid vid vlab i macrovars scanvar;
@@ -36,7 +42,14 @@ Updates: 18/07/2014 KR - Changed the way this deals with missing values: no long
 	%goto exit;
 %end;
 
-
+data _null_;
+	if cexist("work.formats.&varcn.format") then do;
+		put "WARNING: The format: &varcn specified for the new variable already exists.";
+		put "If you are running your syntax for the first time in a SAS session, this may cause problems
+			 depending on the contents of your tables. If you are re-running syntax then this may not
+			 be a problem. See the macro file for more details";
+	end;
+run;
 
 data work.infvals;
 	set &dsin (keep=&varc);
@@ -62,7 +75,7 @@ data work.informat (keep=fmtname type start end label );
 	sequence+1;
  	start=fval;
 	end=start;
-	label=trim(left(put(sequence,best12.)));
+	label=strip(put(sequence,best12.));
 	if missing(start) then do;
 		sequence=sequence-1;
 		label='.';
@@ -95,7 +108,7 @@ data &dsout;
 	set &dsin;
 	&varn=input(trim(left(put(&varc,&varcf))),Convifmt.);
 	format &varn &varcn;
-	label &varn="%sysfunc(trim(%sysfunc(left(&vlab))))";
+	label &varn="%sysfunc(strip(&vlab))";
 run;
 
  proc catalog catalog=work.formats;
